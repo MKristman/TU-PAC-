@@ -1,1 +1,60 @@
+/* style.css */
+body {
+    background-color: #000;
+    color: #fff;
+    font-family: 'Courier New', Courier, monospace; /* Pac-Man font alternative */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+}
 
+#game-container {
+    position: relative;
+    width: 100%;
+    max-width: 400px; /* Adjust this to match your canvas width */
+    text-align: center;
+}
+
+h1.game-title {
+    font-size: 2rem;
+    color: #ff0; /* Yellow title color */
+    margin-bottom: 10px;
+    text-shadow: 2px 2px #f00; /* Subtle text effect */
+}
+
+canvas {
+    border: 3px solid #00f; /* Blue maze boundary style */
+    display: block;
+    background-color: #000;
+}
+
+#ui-controls {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.control-btn {
+    width: 60px;
+    height: 60px;
+    background-color: #333;
+    border: 2px solid #555;
+    border-radius: 50%;
+    color: #fff;
+    font-size: 1.5rem;
+    font-weight: bold;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    -webkit-user-select: none; /* Prevents text selection on hold */
+    user-select: none;
+}
+
+.control-btn:active {
+    background-color: #555;
+}
