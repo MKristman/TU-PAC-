@@ -1,27 +1,30 @@
-/* script.js */
-
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-const TILE_SIZE = 20;
-const ROWS = canvas.height / TILE_SIZE;
-const COLS = canvas.width / TILE_SIZE;
+canvas.width = 380;
+canvas.height = 400;
 
-// 1 = Wall, 0 = Pellet, 2 = Empty Space
-const mazeMap = [
+const TILE_SIZE = 20;
+const sprite = new Image();
+sprite.src = 'assets/sprite.png';
+
+const bgMusic = new Audio('assets/music.mp3');
+bgMusic.loop = true;
+
+const maze = [
     [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
     [1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1],
     [1,0,1,1,0,1,1,1,0,1,0,1,1,1,0,1,1,0,1],
     [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
     [1,0,1,1,0,1,0,1,1,1,1,1,0,1,0,1,1,0,1],
     [1,0,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,1],
-    [1,1,1,1,0,1,1,1,2,1,2,1,1,1,0,1,1,1,1],
-    [2,2,2,1,0,1,2,2,2,2,2,2,2,1,0,1,2,2,2], // Ghost house area
-    [1,1,1,1,0,1,2,1,1,2,1,1,2,1,0,1,1,1,1],
-    [2,2,2,2,0,2,2,1,2,2,2,1,2,2,0,2,2,2,2], // Tunnel
-    [1,1,1,1,0,1,2,1,1,1,1,1,2,1,0,1,1,1,1],
-    [2,2,2,1,0,1,2,2,2,2,2,2,2,1,0,1,2,2,2],
-    [1,1,1,1,0,1,2,1,1,1,1,1,2,1,0,1,1,1,1],
+    [1,1,1,1,0,1,1,1,0,1,0,1,1,1,0,1,1,1,1],
+    [0,0,0,1,0,1,0,0,0,0,0,0,0,1,0,1,0,0,0],
+    [1,1,1,1,0,1,0,1,1,0,1,1,0,1,0,1,1,1,1],
+    [0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0],
+    [1,1,1,1,0,1,0,1,1,1,1,1,0,1,0,1,1,1,1],
+    [0,0,0,1,0,1,0,0,0,0,0,0,0,1,0,1,0,0,0],
+    [1,1,1,1,0,1,0,1,1,1,1,1,0,1,0,1,1,1,1],
     [1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1],
     [1,0,1,1,0,1,1,1,0,1,0,1,1,1,0,1,1,0,1],
     [1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,1],
@@ -30,222 +33,111 @@ const mazeMap = [
     [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
 ];
 
-const pellets = [];
-let score = 0;
-let lives = 3;
-let gameOver = false;
-
-// Load Sprite Image
-const spriteImage = new Image();
-spriteImage.src = 'assets/your_sprite.png'; // Make sure this matches your file name
-
-// Game Objects
-const player = {
-    x: TILE_SIZE * 9,
-    y: TILE_SIZE * 13,
-    size: TILE_SIZE - 2,
-    speed: 2,
-    dirX: 0,
-    dirY: 0
+let player = {
+    x: 9 * TILE_SIZE,
+    y: 13 * TILE_SIZE,
+    dx: 0,
+    dy: 0,
+    nextDx: 0,
+    nextDy: 0
 };
 
-// Simplified Ghost Setup (Mechanically similar)
-const ghosts = [
-    { x: TILE_SIZE * 8, y: TILE_SIZE * 7, color: 'red', speed: 1.5, dirX: 1, dirY: 0 },
-    { x: TILE_SIZE * 10, y: TILE_SIZE * 7, color: 'pink', speed: 1.5, dirX: -1, dirY: 0 }
-];
-
-// Initialize Pellets
-function initMap() {
-    for (let r = 0; r < ROWS; r++) {
-        for (let c = 0; c < COLS; c++) {
-            if (mazeMap[r][c] === 0) {
-                pellets.push({ r, c, eated: false });
-            }
-        }
-    }
-}
-
-// Drawing Functions
 function drawMaze() {
-    ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    for (let r = 0; r < ROWS; r++) {
-        for (let c = 0; c < COLS; c++) {
-            if (mazeMap[r][c] === 1) {
-                ctx.fillStyle = '#1919A6'; // Dark blue walls
+    for (let r = 0; r < maze.length; r++) {
+        for (let c = 0; c < maze[r].length; c++) {
+            if (maze[r][c] === 1) {
+                ctx.fillStyle = '#0000ff';
                 ctx.fillRect(c * TILE_SIZE, r * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+            } else if (maze[r][c] === 0) {
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(c * TILE_SIZE + TILE_SIZE / 2, r * TILE_SIZE + TILE_SIZE / 2, 2, 0, Math.PI * 2);
+                ctx.fill();
             }
         }
     }
 }
 
-function drawPellets() {
-    ctx.fillStyle = '#fff';
-    pellets.forEach(p => {
-        if (!p.eated) {
-            ctx.beginPath();
-            ctx.arc(p.c * TILE_SIZE + TILE_SIZE / 2, p.r * TILE_SIZE + TILE_SIZE / 2, 3, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.closePath();
-        }
+function canMove(x, y) {
+    let gridX = Math.floor(x / TILE_SIZE);
+    let gridY = Math.floor(y / TILE_SIZE);
+    
+    // Check all four corners of the sprite for collision
+    const padding = 2;
+    const corners = [
+        {x: x + padding, y: y + padding},
+        {x: x + TILE_SIZE - padding, y: y + padding},
+        {x: x + padding, y: y + TILE_SIZE - padding},
+        {x: x + TILE_SIZE - padding, y: y + TILE_SIZE - padding}
+    ];
+
+    return corners.every(c => {
+        let cx = Math.floor(c.x / TILE_SIZE);
+        let cy = Math.floor(c.y / TILE_SIZE);
+        return maze[cy] && maze[cy][cx] !== 1;
     });
 }
 
-function drawPlayer() {
-    // Draw the custom sprite instead of a circle
-    if (spriteImage.complete) {
-        ctx.drawImage(spriteImage, player.x, player.y, player.size, player.size);
-    } else {
-        // Fallback circle if image isn't loaded
-        ctx.fillStyle = 'yellow';
-        ctx.beginPath();
-        ctx.arc(player.x + player.size/2, player.y + player.size/2, player.size/2, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.closePath();
-    }
-}
-
-function drawGhosts() {
-    ghosts.forEach(g => {
-        ctx.fillStyle = g.color;
-        ctx.fillRect(g.x, g.y, player.size, player.size); // Simple square ghosts
-    });
-}
-
-// Move Functions
-function movePlayer() {
-    let nextX = player.x + player.dirX * player.speed;
-    let nextY = player.y + player.dirY * player.speed;
-
-    // Check Wall Collision
-    let gridX = Math.floor(nextX / TILE_SIZE);
-    let gridY = Math.floor(nextY / TILE_SIZE);
-
-    if (mazeMap[gridY][gridX] !== 1 &&
-        mazeMap[gridY][Math.floor((nextX + player.size - 1) / TILE_SIZE)] !== 1 &&
-        mazeMap[Math.floor((nextY + player.size - 1) / TILE_SIZE)][gridX] !== 1 &&
-        mazeMap[Math.floor((nextY + player.size - 1) / TILE_SIZE)][Math.floor((nextX + player.size - 1) / TILE_SIZE)] !== 1
-    ) {
-        player.x = nextX;
-        player.y = nextY;
-    }
-
-    // Tunnel Effect (Seamless wrap around)
-    if (player.x < -player.size) player.x = canvas.width;
-    if (player.x > canvas.width) player.x = -player.size;
-
-    // Eat Pellets
-    let pGridX = Math.round(player.x / TILE_SIZE);
-    let pGridY = Math.round(player.y / TILE_SIZE);
-    let pelletIndex = pellets.findIndex(p => p.r === pGridY && p.c === pGridX && !p.eated);
-    if (pelletIndex !== -1) {
-        pellets[pelletIndex].eated = true;
-        score += 10;
-        console.log("Score: " + score);
-    }
-}
-
-// Basic Ghost movement logic
-function moveGhosts() {
-    ghosts.forEach(g => {
-        let nextX = g.x + g.dirX * g.speed;
-        let nextY = g.y + g.dirY * g.speed;
-
-        let gridX = Math.floor(nextX / TILE_SIZE);
-        let gridY = Math.floor(nextY / TILE_SIZE);
-
-        if (mazeMap[gridY][gridX] !== 1 &&
-            mazeMap[gridY][Math.floor((nextX + player.size - 1) / TILE_SIZE)] !== 1
-        ) {
-            g.x = nextX;
-            g.y = nextY;
-        } else {
-            // Change direction randomly on collision
-            let dirs = [{x: 1, y: 0}, {x: -1, y: 0}, {x: 0, y: 1}, {x: 0, y: -1}];
-            let newDir = dirs[Math.floor(Math.random() * dirs.length)];
-            g.dirX = newDir.x;
-            g.dirY = newDir.y;
-        }
-
-        // Simple Player Collision
-        if (player.x < g.x + player.size &&
-            player.x + player.size > g.x &&
-            player.y < g.y + player.size &&
-            player.y + player.size > g.y) {
-                lives--;
-                console.log("Lives left: " + lives);
-                if (lives <= 0) gameOver = true;
-                else resetPositions();
-        }
-    });
-}
-
-function resetPositions() {
-    player.x = TILE_SIZE * 9;
-    player.y = TILE_SIZE * 13;
-    ghosts[0].x = TILE_SIZE * 8; ghosts[0].y = TILE_SIZE * 7;
-    ghosts[1].x = TILE_SIZE * 10; ghosts[1].y = TILE_SIZE * 7;
-}
-
-// Main Game Loop
 function update() {
-    if (gameOver) {
-        ctx.fillStyle = 'white';
-        ctx.font = '30px Courier New';
-        ctx.fillText("GAME OVER", canvas.width/4, canvas.height/2);
-        return;
+    // Attempt to turn
+    if (player.nextDx !== 0 || player.nextDy !== 0) {
+        if (canMove(player.x + player.nextDx, player.y + player.nextDy)) {
+            player.dx = player.nextDx;
+            player.dy = player.nextDy;
+        }
     }
 
-    movePlayer();
-    moveGhosts();
+    // Move
+    if (canMove(player.x + player.dx, player.y + player.dy)) {
+        player.x += player.dx;
+        player.y += player.dy;
+    }
+
+    // Wrap around (Tunnel)
+    if (player.x < 0) player.x = canvas.width - TILE_SIZE;
+    if (player.x >= canvas.width) player.x = 0;
+
+    // Eat pellets
+    let pX = Math.floor((player.x + TILE_SIZE / 2) / TILE_SIZE);
+    let pY = Math.floor((player.y + TILE_SIZE / 2) / TILE_SIZE);
+    if (maze[pY][pX] === 0) {
+        maze[pY][pX] = 2;
+    }
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawMaze();
-    drawPellets();
-    drawPlayer();
-    drawGhosts();
-
-    requestAnimationFrame(update);
+    ctx.drawImage(sprite, player.x, player.y, TILE_SIZE, TILE_SIZE);
+    requestAnimationFrame(() => {
+        update();
+        draw();
+    });
 }
 
-// Controls Input
-function setDirection(dx, dy) {
-    player.dirX = dx;
-    player.dirY = dy;
-}
+// Input Handling
+const setDir = (x, y) => {
+    player.nextDx = x * 2;
+    player.nextDy = y * 2;
+    if (bgMusic.paused) bgMusic.play().catch(() => {});
+};
 
-// Keyboard Controls (Desktop)
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowUp') setDirection(0, -1);
-    else if (e.key === 'ArrowDown') setDirection(0, 1);
-    else if (e.key === 'ArrowLeft') setDirection(-1, 0);
-    else if (e.key === 'ArrowRight') setDirection(1, 0);
+document.getElementById('btn-up').addEventListener('touchstart', (e) => { e.preventDefault(); setDir(0, -1); });
+document.getElementById('btn-down').addEventListener('touchstart', (e) => { e.preventDefault(); setDir(0, 1); });
+document.getElementById('btn-left').addEventListener('touchstart', (e) => { e.preventDefault(); setDir(-1, 0); });
+document.getElementById('btn-right').addEventListener('touchstart', (e) => { e.preventDefault(); setDir(1, 0); });
+
+// Mouse click fallback for D-pad
+document.getElementById('btn-up').addEventListener('mousedown', () => setDir(0, -1));
+document.getElementById('btn-down').addEventListener('mousedown', () => setDir(0, 1));
+document.getElementById('btn-left').addEventListener('mousedown', () => setDir(-1, 0));
+document.getElementById('btn-right').addEventListener('mousedown', () => setDir(1, 0));
+
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowUp') setDir(0, -1);
+    if (e.key === 'ArrowDown') setDir(0, 1);
+    if (e.key === 'ArrowLeft') setDir(-1, 0);
+    if (e.key === 'ArrowRight') setDir(1, 0);
 });
 
-// Mobile Touch Controls (Virtual D-Pad)
-const controls = {
-    up: document.getElementById('upBtn'),
-    down: document.getElementById('downBtn'),
-    left: document.getElementById('leftBtn'),
-    right: document.getElementById('rightBtn')
-};
-
-function addTouchControl(element, dx, dy) {
-    // Handling both touch and mouse click for testing
-    element.addEventListener('touchstart', (e) => {
-        e.preventDefault(); // Prevents scrolling
-        setDirection(dx, dy);
-    });
-    element.addEventListener('mousedown', () => setDirection(dx, dy));
-}
-
-addTouchControl(controls.up, 0, -1);
-addTouchControl(controls.down, 0, 1);
-addTouchControl(controls.left, -1, 0);
-addTouchControl(controls.right, 1, 0);
-
-
-// Start the game
-initMap();
-update();
-  
+sprite.onload = draw;
